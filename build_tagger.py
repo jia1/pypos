@@ -1,3 +1,4 @@
+import json
 import sys
 
 args = sys.argv
@@ -80,3 +81,6 @@ with open(model_file, 'w') as h:
     h.write('{0}\n'.format(num_tags))
     for row in mat_transitions:
         h.write('{0}\n'.format(' '.join([str(col) for col in row])))
+
+with open('emit.out', 'w') as e:
+    json.dump(map_emissions, e)
