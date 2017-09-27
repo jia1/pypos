@@ -12,7 +12,7 @@ mat_transitions, map_emissions = [], {}
 num_transitions, num_emissions = {}, {}
 sum_transitions, sum_emissions = {}, {}
 
-start_tag = '<s>'
+start_tag, end_tag = '<s>', '</s>'
 
 pos_tags_list = [start_tag]
 pos_tags_dict = {start_tag: 0}
@@ -24,6 +24,9 @@ with open('pos.key', 'r') as k:
         pos_tags_list.append(stripped_tag)
         pos_tags_dict[stripped_tag] = num_tags
         num_tags += 1
+    pos_tags_list.append(end_tag)
+    pos_tags_dict[end_tag] = num_tags
+    num_tags += 1
 
 with open(train_file, 'r') as f:
     for line in f:
@@ -55,6 +58,17 @@ with open(train_file, 'r') as f:
                 sum_emissions[curr_token] += 1
 
             prev_token, prev_tag = curr_token, curr_tag
+
+        curr_tag = '</s>'
+        if prev_tag not in num_transitions:
+            num_transitions[prev_tag] = {curr_tag: 1}
+            sum_transitions[prev_tag] = 1
+        elif curr_tag not in num_transitions[prev_tag]:
+            num_transitions[prev_tag][curr_tag] = 1
+            sum_transitions[prev_tag] += 1
+        else:
+            num_transitions[prev_tag][curr_tag] += 1
+            sum_transitions[prev_tag] += 1
 
 mat_transitions = [[0 for col in range(num_tags)] for row in range(num_tags)]
 
