@@ -7,7 +7,7 @@ if len(args) != 4:
 
 train_file, devt_file, model_file = args[1:]
 
-mat_transitions, map_emissions = [], {}
+mat_transitions, mat_emissions = [], []
 num_transitions, num_emissions = {}, {}
 sum_transitions, sum_emissions = {}, {}
 
@@ -16,6 +16,9 @@ start_tag = '<s>'
 pos_tags_list = [start_tag]
 pos_tags_dict = {start_tag: 0}
 num_tags = 1
+num_tokens = 0
+
+token_list = []
 
 with open('pos.key', 'r') as k:
     for tag in k:
@@ -63,9 +66,16 @@ for prev_tag in num_transitions:
         col = pos_tags_dict[next_tag]
         mat_transitions[row][col] = num_transitions[prev_tag][next_tag] / sum_transitions[prev_tag]
 
-for curr_token, curr_emission in num_emissions.items():
-    map_emissions[curr_token] = {k: (v / sum_emissions[curr_token]) for k, v in curr_emission.items()}
+mat_emissions = [[] for row in range(num_tags)]
 
+for curr_token in num_emissions:
+    token_list.append(curr_token)
+    for row in range(num_tags):
+        mat_emissions[row].append(0)
+    for curr_tag in num_emissions[curr_token]:
+        tag_index = pos_tags_dict[curr_tag]
+        mat_emissions[tag_index][num_tokens] = num_emissions[curr_token][curr_tag]
+    num_tokens += 1
 '''
 with open(devt_file, 'r') as g:
     for line in g:
@@ -80,3 +90,12 @@ with open(model_file, 'w') as h:
     h.write('{0}\n'.format(num_tags))
     for row in mat_transitions:
         h.write('{0}\n'.format(' '.join([str(col) for col in row])))
+
+    h.write('{0}\n'.format(num_tokens))
+    for row in mat_emissions:
+        h.write('{0}\n'.format(' '.join([str(col) for col in row])))
+
+with open('token.key', 'w') as t:
+    t.write('{0}\n'.format(num_tokens))
+    for token in token_list:
+        t.write('{0}\n'.format(token))
