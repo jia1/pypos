@@ -7,46 +7,51 @@ if len(args) != 4:
 
 train_file, devt_file, model_file = args[1:]
 
-mat_transitions, map_emissions = [], []
+mat_transitions, map_emissions = [], {}
 num_transitions, num_emissions = {}, {}
+sum_transitions, sum_emissions = {}, {}
 
-pos_tags_list = []
-pos_tags_dict = {}
-num_tags = 0
-
-sum_key = 'TOTAL'
 start_tag = '<s>'
+
+pos_tags_list = [start_tag]
+pos_tags_dict = {start_tag: 0}
+num_tags = 1
 
 with open('pos.key') as k:
     for tag in k:
-        pos_tags_list.append(tag)
-        pos_tags_dict[tag] = num_tags
+        stripped_tag = tag.strip()
+        pos_tags_list.append(stripped_tag)
+        pos_tags_dict[stripped_tag] = num_tags
         num_tags += 1
 
 with open(train_file) as f:
-    prev_token, prev_tag = '', start_tag
     for line in f:
-        split_line = line.split(' ')
+        prev_token, prev_tag = '', start_tag
+        split_line = line.strip().split(' ')
         for tagged_token in split_line:
-            curr_token, curr_tag = tagged_token.split('/')
+            split_token = tagged_token.split('/')
+            curr_token = ''.join(split_token[:-1])
+            curr_tag = split_token[-1]
 
             if prev_tag not in num_transitions:
-                num_transitions[prev_tag] = {curr_tag: 1, sum_key: 1}
+                num_transitions[prev_tag] = {curr_tag: 1}
+                sum_transitions[prev_tag] = 1
             elif curr_tag not in num_transitions[prev_tag]:
                 num_transitions[prev_tag][curr_tag] = 1
-                num_transitions[prev_tag][sum_key] += 1
+                sum_transitions[prev_tag] += 1
             else:
                 num_transitions[prev_tag][curr_tag] += 1
-                num_transitions[prev_tag][sum_key] += 1
+                sum_transitions[prev_tag] += 1
 
             if curr_token not in num_emissions:
-                num_emissions[curr_token] = {curr_tag: 1, sum_key: 1}
+                num_emissions[curr_token] = {curr_tag: 1}
+                sum_emissions[curr_token] = 1
             elif curr_tag not in num_emissions[curr_token]:
                 num_emissions[curr_token][curr_tag] = 1
-                num_emissions[curr_token][sum_key] += 1
+                sum_emissions[curr_token] += 1
             else:
                 num_emissions[curr_token][curr_tag] += 1
-                num_emissions[curr_token][sum_key] += 1
+                sum_emissions[curr_token] += 1
 
             prev_token, prev_tag = curr_token, curr_tag
 
@@ -56,16 +61,16 @@ for prev_tag in num_transitions:
     row = pos_tags_dict[prev_tag]
     for next_tag in num_transitions[prev_tag]:
         col = pos_tags_dict[next_tag]
-        mat_transitions[row][col] = \
-            num_transitions[prev_tag][next_tag] / num_transitions[prev_tag][sum_key]
+        mat_transitions[row][col] = num_transitions[prev_tag][next_tag] / sum_transitions[prev_tag]
 
-map_emissions = num_emissions
+for curr_token, curr_emission in num_emissions.items():
+    map_emissions[curr_token] = {k: (v / sum_emissions[curr_token]) for k, v in curr_emission.items()}
 
 '''
 with open(devt_file) as g:
-    prev_token, prev_tag = '', start_tag
     for line in g:
-        split_line = line.split(' ')
+        prev_token, prev_tag = '', start_tag
+        split_line = line.strip().split(' ')
         for tagged_token in split_line:
             curr_token, curr_tag = tagged_token.split('/')
 
