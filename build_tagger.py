@@ -17,14 +17,14 @@ pos_tags_list = [start_tag]
 pos_tags_dict = {start_tag: 0}
 num_tags = 1
 
-with open('pos.key') as k:
+with open('pos.key', 'r') as k:
     for tag in k:
         stripped_tag = tag.strip()
         pos_tags_list.append(stripped_tag)
         pos_tags_dict[stripped_tag] = num_tags
         num_tags += 1
 
-with open(train_file) as f:
+with open(train_file, 'r') as f:
     for line in f:
         prev_token, prev_tag = '', start_tag
         split_line = line.strip().split(' ')
@@ -67,7 +67,7 @@ for curr_token, curr_emission in num_emissions.items():
     map_emissions[curr_token] = {k: (v / sum_emissions[curr_token]) for k, v in curr_emission.items()}
 
 '''
-with open(devt_file) as g:
+with open(devt_file, 'r') as g:
     for line in g:
         prev_token, prev_tag = '', start_tag
         split_line = line.strip().split(' ')
@@ -76,9 +76,7 @@ with open(devt_file) as g:
 
             prev_token, prev_tag = curr_token, curr_tag
 '''
-'''
-with open(model_file) as h:
-    h.write(num_tags)
+with open(model_file, 'w') as h:
+    h.write('{0}\n'.format(num_tags))
     for row in mat_transitions:
-        pass
-'''
+        h.write('{0}\n'.format(' '.join([str(col) for col in row])))
