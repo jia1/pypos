@@ -1,3 +1,4 @@
+from copy import deepcopy
 import json
 import sys
 
@@ -8,15 +9,15 @@ if len(args) != 4:
 
 train_file, devt_file, model_file = args[1:]
 
-mat_transitions, map_emissions = [], {}
-num_transitions, num_emissions = {}, {}
-sum_transitions, sum_emissions = {}, {}
-
 start_tag, end_tag = '<s>', '</s>'
 
 pos_tags_list = [start_tag]
 pos_tags_dict = {start_tag: 0}
 num_tags = 1
+
+mat_transitions, map_emissions = [], {}
+num_transitions, num_emissions = {}, {}
+sum_transitions, sum_emissions = {}, {}
 
 with open('pos.key', 'r') as k:
     for tag in k:
@@ -28,6 +29,16 @@ with open('pos.key', 'r') as k:
     pos_tags_dict[end_tag] = num_tags
     num_tags += 1
 
+mat_transitions = [[0 for tag in range(num_tags)] for tag in range(num_tags)]
+tag_count_dict = {tag: 0 for tag in pos_tags_list}
+tag_token_dict = {tag: {} for tag in pos_tags_list}
+tag_tag_dict = {tag: {tag: 0 for tag in pos_tags_list} for tag in tag_count_dict}
+num_transitions = deepcopy(tag_tag_dict)
+map_emissions = deepcopy(tag_token_dict)
+num_emissions = deepcopy(tag_token_dict)
+sum_transitions = deepcopy(tag_count_dict)
+sum_emissions = deepcopy(tag_count_dict)
+
 with open(train_file, 'r') as f:
     for line in f:
         prev_token, prev_tag = '', start_tag
@@ -37,49 +48,32 @@ with open(train_file, 'r') as f:
             curr_token = ''.join(split_token[:-1])
             curr_tag = split_token[-1]
 
-            if prev_tag not in num_transitions:
-                num_transitions[prev_tag] = {curr_tag: 1}
-                sum_transitions[prev_tag] = 1
-            elif curr_tag not in num_transitions[prev_tag]:
-                num_transitions[prev_tag][curr_tag] = 1
-                sum_transitions[prev_tag] += 1
-            else:
-                num_transitions[prev_tag][curr_tag] += 1
-                sum_transitions[prev_tag] += 1
+            num_transitions[prev_tag][curr_tag] += 1
+            sum_transitions[prev_tag] += 1
 
-            if curr_token not in num_emissions:
-                num_emissions[curr_token] = {curr_tag: 1}
-                sum_emissions[curr_token] = 1
-            elif curr_tag not in num_emissions[curr_token]:
-                num_emissions[curr_token][curr_tag] = 1
-                sum_emissions[curr_token] += 1
+            if curr_token not in num_emissions[curr_tag]:
+                num_emissions[curr_tag][curr_token] = 1
+                sum_emissions[curr_tag] += 1
             else:
-                num_emissions[curr_token][curr_tag] += 1
-                sum_emissions[curr_token] += 1
+                num_emissions[curr_tag][curr_token] += 1
+                sum_emissions[curr_tag] += 1
 
             prev_token, prev_tag = curr_token, curr_tag
 
         curr_tag = '</s>'
-        if prev_tag not in num_transitions:
-            num_transitions[prev_tag] = {curr_tag: 1}
-            sum_transitions[prev_tag] = 1
-        elif curr_tag not in num_transitions[prev_tag]:
-            num_transitions[prev_tag][curr_tag] = 1
-            sum_transitions[prev_tag] += 1
-        else:
-            num_transitions[prev_tag][curr_tag] += 1
-            sum_transitions[prev_tag] += 1
-
-mat_transitions = [[0 for col in range(num_tags)] for row in range(num_tags)]
+        num_transitions[prev_tag][curr_tag] += 1
+        sum_transitions[prev_tag] += 1
 
 for prev_tag in num_transitions:
-    row = pos_tags_dict[prev_tag]
-    for next_tag in num_transitions[prev_tag]:
-        col = pos_tags_dict[next_tag]
-        mat_transitions[row][col] = num_transitions[prev_tag][next_tag] / sum_transitions[prev_tag]
+    count = sum_transitions[prev_tag]
+    if count > 0:
+        row = pos_tags_dict[prev_tag]
+        for next_tag in num_transitions[prev_tag]:
+            col = pos_tags_dict[next_tag]
+            mat_transitions[row][col] = num_transitions[prev_tag][next_tag] / sum_transitions[prev_tag]
 
-for curr_token, curr_emission in num_emissions.items():
-    map_emissions[curr_token] = {k: (v / sum_emissions[curr_token]) for k, v in curr_emission.items()}
+for curr_tag, curr_emission in num_emissions.items():
+    map_emissions[curr_tag] = {k: (v / sum_emissions[curr_tag]) for k, v in curr_emission.items()}
 
 '''
 with open(devt_file, 'r') as g:
