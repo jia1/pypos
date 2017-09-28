@@ -64,6 +64,31 @@ with open(train_file, 'r') as f:
         num_transitions[prev_tag][curr_tag] += 1
         sum_transitions[prev_tag] += 1
 
+with open(devt_file, 'r') as f:
+    for line in f:
+        prev_token, prev_tag = '', start_tag
+        split_line = line.strip().split(' ')
+        for tagged_token in split_line:
+            split_token = tagged_token.split('/')
+            curr_token = ''.join(split_token[:-1])
+            curr_tag = split_token[-1]
+
+            num_transitions[prev_tag][curr_tag] += 1
+            sum_transitions[prev_tag] += 1
+
+            if curr_token not in num_emissions[curr_tag]:
+                num_emissions[curr_tag][curr_token] = 1
+                sum_emissions[curr_tag] += 1
+            else:
+                num_emissions[curr_tag][curr_token] += 1
+                sum_emissions[curr_tag] += 1
+
+            prev_token, prev_tag = curr_token, curr_tag
+
+        curr_tag = '</s>'
+        num_transitions[prev_tag][curr_tag] += 1
+        sum_transitions[prev_tag] += 1
+
 for prev_tag in num_transitions:
     count = sum_transitions[prev_tag]
     if count > 0:
@@ -75,16 +100,6 @@ for prev_tag in num_transitions:
 for curr_tag, curr_emission in num_emissions.items():
     map_emissions[curr_tag] = {k: (v / sum_emissions[curr_tag]) for k, v in curr_emission.items()}
 
-'''
-with open(devt_file, 'r') as g:
-    for line in g:
-        prev_token, prev_tag = '', start_tag
-        split_line = line.strip().split(' ')
-        for tagged_token in split_line:
-            curr_token, curr_tag = tagged_token.split('/')
-
-            prev_token, prev_tag = curr_token, curr_tag
-'''
 with open(model_file, 'w') as h:
     h.write('{0}\n'.format(num_tags))
     for row in mat_transitions:
