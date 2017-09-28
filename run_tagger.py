@@ -38,60 +38,68 @@ with open(emit_file, 'r') as e:
 
 a, b = mat_transitions, map_emissions
 
-def viterbi(T):
-    global a # N*N: P(curr_tag|prev_tag) where N = num_tags
-    global b # map: P(curr_tag|curr_token)
+def viterbi(tokens):
+    global a
+    global b
 
-    mat_viterbi = [[0 for col in range(len(T))] for row in range(num_tags)]
-    mat_backptr = [[-1 for col in range(len(T))] for row in range(num_tags)]
+    # a:
+    #   N*N matrix where N = num_tags (includes <s> and </s>, already +2)
+    #   P(curr_tag|prev_tag)
+    #   a[prev_tag][curr_tag]
+
+    # b:
+    #   len(N) map where N = num_tags (includes <s> and </s>, already +2)
+    #   P(curr_token|curr_tag)
+    #   if b[curr_tag][curr_token] then b[curr_tag][curr_token] else 0
+
+    T = len(tokens)
+
+    mat_viterbi = [[0 for token in range(T)] for tag in range(num_tags)]
+    mat_backptr = [[0 for token in range(T)] for tag in range(num_tags)]
 
     for s in range(num_tags):
-        token, tag = T[0], pos_tags_list[s]
-        if token not in b or tag not in b[token]:
-            mat_viterbi[s][0] = 0
-        else:
-            mat_viterbi[s][0] = a[0][s] * Decimal(b[token][tag])
-    for t in range(1, len(T)):
+        token, tag = tokens[0], pos_tags_list[s]
+        if token in b[tag]:
+            mat_viterbi[s][0] = a[0][s] * Decimal(b[tag][token])
+
+    for t in range(1, T):
         for s in range(num_tags):
-            v_max_prob, v_max_s, b_max_prob, b_max_s = 0, 0, 0, 0
+            v_max_prob, b_max_prob, b_max_s = 0, 0, 0
             for s_prime in range(num_tags):
                 b_curr_prob = mat_viterbi[s_prime][t-1] * a[s_prime][s]
-                token, tag = T[t-1], pos_tags_list[s_prime]
-                if token not in b or tag not in b[token]:
-                    v_curr_prob = 0
-                else:
-                    v_curr_prob = b_curr_prob * Decimal(b[token][tag])
+                v_curr_prob = 0
+                token, tag = tokens[t], pos_tags_list[s]
+                if token in b[tag]:
+                    v_curr_prob = b_curr_prob * Decimal(b[tag][token])
                 if v_curr_prob > v_max_prob:
                     v_max_prob = v_curr_prob
-                    v_max_s = s_prime
                 if b_curr_prob > b_max_prob:
                     b_max_prob = b_curr_prob
                     b_max_s = s_prime
             mat_viterbi[s][t] = v_max_prob
-            mat_backptr[s][t] = b_max_s
+            mat_backptr[s][t-1] = b_max_s
 
+    v_max_prob, b_max_prob, b_max_s = 0, 0, 0
     for s_prime in range(num_tags):
-        b_curr_prob = mat_viterbi[s_prime][-1] * a[s_prime][s]
-        token, tag = T[-1], pos_tags_list[s_prime]
-        if token not in b or tag not in b[token]:
-            v_curr_prob = 0
-        else:
-            v_curr_prob = b_curr_prob * Decimal(b[token][tag])
+        b_curr_prob = mat_viterbi[s_prime][-1] * a[s_prime][-1]
+        v_curr_prob = 0
+        token, tag = tokens[-1], pos_tags_list[s_prime]
+        if token in b[tag]:
+            v_curr_prob = b_curr_prob * Decimal(b[tag][token])
         if v_curr_prob > v_max_prob:
             v_max_prob = v_curr_prob
-            v_max_s = s_prime
         if b_curr_prob > b_max_prob:
             b_max_prob = b_curr_prob
             b_max_s = s_prime
     mat_viterbi[-1][-1] = v_max_prob
     mat_backptr[-1][-1] = b_max_s
 
-    max_s = mat_backptr[-1][-1]
+    max_s = -1
     fin_back_path = []
-    for t in range(len(T)-1, 0, -1):
+    for t in range(T-1, -1, -1):
+        max_s = mat_backptr[max_s][t]
         fin_back_path.append(max_s)
-        max_s = mat_backptr[max_s][t-1]
-    fin_back_path.append(max_s)
+
     return fin_back_path[::-1]
 
 with open(test_file, 'r') as f, open(result_file, 'w') as g:
