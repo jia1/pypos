@@ -9,3 +9,7 @@ Please add `python` to your `%PATH%` / `$PATH` before executing the following co
 
     python build_tagger.py data/sents.train data/sents.devt model.out
     python run_tagger.py data/sents.test model.out sents.out
+    
+### Current accuracy
+
+~ 87.3%
