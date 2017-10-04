@@ -36,11 +36,10 @@ with open(model_file, 'r') as m:
 with open(emit_file, 'r') as e:
     map_emissions = json.load(e)
 
-a, b = mat_transitions, map_emissions
+a = mat_transitions
 
-def viterbi(tokens):
+def viterbi(tokens, b):
     global a
-    global b
 
     # a:
     #   N*N matrix where N = num_tags (includes <s> and </s>, already +2)
@@ -102,10 +101,34 @@ def viterbi(tokens):
 
     return fin_back_path[::-1]
 
+def get_updated_emission_map(tokens, b):
+    unseen = []
+    for token in tokens:
+        seen = False
+        for tag in b:
+            if token in b[tag]:
+                seen = True
+                break
+        if not seen:
+            unseen.append(token)
+    if unseen:
+        num_unseen = len(unseen)
+        vocabulary = set(tokens)
+        for tag in b:
+            vocabulary.update(b[tag].keys())
+        Z = num_unseen * num_tags
+        T = len(vocabulary) - Z
+        for tag in b:
+            tag_freq = len(b[tag])
+            b[tag] = {token: ((b[tag][token] * tag_freq) / (tag_freq + T)) for token in b[tag]}
+            for unseen_token in unseen:
+                b[tag][unseen_token] = T / (Z * (tag_freq + T))
+    return b
+
 with open(test_file, 'r') as f, open(result_file, 'w') as g:
     for line in f:
         tokens = line.strip().split(' ')
-        tags = list(map(lambda index: pos_tags_list[index], viterbi(tokens)))
+        tags = list(map(lambda index: pos_tags_list[index], viterbi(tokens, get_updated_emission_map(tokens, map_emissions))))
 
         tagged_tokens = []
         for i in range(len(tokens)):
