@@ -104,18 +104,19 @@ def viterbi(tokens, b):
 
 def get_updated_emission_map(tokens, b):
     vocabulary = deepcopy(b);
-    unseen = {tag: [] for tag in pos_tags_dict}
+    unseen = {tag: set() for tag in pos_tags_dict if tag != '<s>' and tag != '</s>'}
     for token in tokens:
         for tag in b:
+            if tag == '<s>' or tag == '</s>':
+                continue
             if token not in b[tag]:
-                unseen[tag].append(token)
-    for tag in b:
+                unseen[tag].add(token)
+    for tag_index in range(1, num_tags-1):
+        tag = pos_tags_list[tag_index]
         T = len(vocabulary[tag])
         Z = len(unseen[tag])
         C = len(b[tag])
         b[tag] = {token: ((b[tag][token] * C) / (C + T)) for token in b[tag]}
-
-        # TODO: Fix ZeroDivisionError
         for token in unseen[tag]:
             b[tag][token] = T / (Z * (C + T))
     return b
