@@ -1,3 +1,4 @@
+from copy import deepcopy
 from decimal import Decimal
 import json
 import sys
@@ -102,27 +103,21 @@ def viterbi(tokens, b):
     return fin_back_path[::-1]
 
 def get_updated_emission_map(tokens, b):
-    unseen = []
+    vocabulary = deepcopy(b);
+    unseen = {tag: [] for tag in pos_tags_dict}
     for token in tokens:
-        seen = False
         for tag in b:
-            if token in b[tag]:
-                seen = True
-                break
-        if not seen:
-            unseen.append(token)
-    if unseen:
-        num_unseen = len(unseen)
-        vocabulary = set(tokens)
-        for tag in b:
-            vocabulary.update(b[tag].keys())
-        Z = num_unseen * num_tags
-        T = len(vocabulary) - Z
-        for tag in b:
-            tag_freq = len(b[tag])
-            b[tag] = {token: ((b[tag][token] * tag_freq) / (tag_freq + T)) for token in b[tag]}
-            for unseen_token in unseen:
-                b[tag][unseen_token] = T / (Z * (tag_freq + T))
+            if token not in b[tag]:
+                unseen[tag].append(token)
+    for tag in b:
+        T = len(vocabulary[tag])
+        Z = len(unseen[tag])
+        C = len(b[tag])
+        b[tag] = {token: ((b[tag][token] * C) / (C + T)) for token in b[tag]}
+
+        # TODO: Fix ZeroDivisionError
+        for token in unseen[tag]:
+            b[tag][token] = T / (Z * (C + T))
     return b
 
 with open(test_file, 'r') as f, open(result_file, 'w') as g:
