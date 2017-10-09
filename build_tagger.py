@@ -71,7 +71,7 @@ for prev_tag in num_transitions:
         row = pos_tags_dict[prev_tag]
         for next_tag in num_transitions[prev_tag]:
             col = pos_tags_dict[next_tag]
-            mat_transitions[row][col] = num_transitions[prev_tag][next_tag] / sum_transitions[prev_tag]
+            mat_transitions[row][col] = Decimal(num_transitions[prev_tag][next_tag] / sum_transitions[prev_tag])
 
 for curr_tag, curr_emission in num_emissions.items():
     map_emissions[curr_tag] = {k: (v / sum_emissions[curr_tag]) for k, v in curr_emission.items()}
