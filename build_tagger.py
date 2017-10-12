@@ -19,6 +19,8 @@ mat_transitions, map_emissions = [], {}
 num_transitions, num_emissions = {}, {}
 sum_transitions, sum_emissions = {}, {}
 
+# 1. Create data structures to map from index to POS tag (list) and from POS tag to index (dict)
+# This is to make sense of each index in the 2D transition matrix
 with open('pos.key', 'r') as k:
     for tag in k:
         stripped_tag = tag.strip()
@@ -39,6 +41,8 @@ num_emissions = deepcopy(tag_token_dict)
 sum_transitions = deepcopy(tag_count_dict)
 sum_emissions = deepcopy(tag_count_dict)
 
+# 2. Open the training data file and parse the tokens and tags
+# Count tag -> tag for transition matrix and tag -> word for emission map
 with open(train_file, 'r') as f:
     for line in f:
         prev_token, prev_tag = '', start_tag
@@ -64,6 +68,7 @@ with open(train_file, 'r') as f:
         num_transitions[prev_tag][curr_tag] += 1
         sum_transitions[prev_tag] += 1
 
+# 3. Open the dev data file and do the same as (2)
 with open(devt_file, 'r') as f:
     for line in f:
         prev_token, prev_tag = '', start_tag
@@ -89,6 +94,8 @@ with open(devt_file, 'r') as f:
         num_transitions[prev_tag][curr_tag] += 1
         sum_transitions[prev_tag] += 1
 
+# 4. Translate transition counts (on a dictionary) to transition matrix (2D list)
+# Divide the frequency of tagA -> tagB by the total frequency of tagA
 for prev_tag in num_transitions:
     count = sum_transitions[prev_tag]
     if count > 0:
@@ -97,13 +104,16 @@ for prev_tag in num_transitions:
             col = pos_tags_dict[next_tag]
             mat_transitions[row][col] = num_transitions[prev_tag][next_tag] / sum_transitions[prev_tag]
 
+# 5. Iterate through the emission map and divide the frequency of tag -> word by tag
 for curr_tag, curr_emission in num_emissions.items():
     map_emissions[curr_tag] = {k: (v / sum_emissions[curr_tag]) for k, v in curr_emission.items()}
 
+# 6. Write transition matrix to file
 with open(model_file, 'w') as h:
     h.write('{0}\n'.format(num_tags))
     for row in mat_transitions:
         h.write('{0}\n'.format(' '.join([str(col) for col in row])))
 
+# 7. Write emission map to file
 with open('emit.out', 'w') as e:
     json.dump(map_emissions, e)
