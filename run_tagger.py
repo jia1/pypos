@@ -112,8 +112,6 @@ def viterbi(tokens, b):
     return fin_back_path[::-1]
 
 # 5. Function to smooth the emission map with a somewhat biased Witten Bell smoothing
-# Biased because this smoothing only occurs to unseen test bigrams
-# I.e. No smoothing if all test tokens exist in the training set
 def get_updated_emission_map(tokens, b):
     unseen = []
     # 5a. Add unseen test tokens to the unseen list
