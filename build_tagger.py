@@ -73,8 +73,18 @@ for prev_tag in num_transitions:
             col = pos_tags_dict[next_tag]
             mat_transitions[row][col] = Decimal(num_transitions[prev_tag][next_tag] / sum_transitions[prev_tag])
 
-for curr_tag, curr_emission in num_emissions.items():
-    map_emissions[curr_tag] = {k: (v / sum_emissions[curr_tag]) for k, v in curr_emission.items()}
+lambda_1, lambda_2 = 1, 0
+step_size = 0.1
+fin_score, fin_map_emissions = 0, {}
+fin_lambda_1 = 1
+
+def interpolate_emission_map(lambda_1, lambda_2):
+    global num_emissions
+    global sum_emissions
+    global map_emissions
+    for curr_tag, curr_emission in num_emissions.items():
+        map_emissions[curr_tag] = {k: lambda_1 * (v / sum_emissions[curr_tag]) + lambda_2 * sum_emissions[curr_tag] \
+            for k, v in curr_emission.items()}
 
 a = mat_transitions
 
@@ -141,7 +151,7 @@ def viterbi(tokens, b):
 
     return fin_back_path[::-1]
 
-def get_updated_emission_map(tokens, b):
+def get_smoothed_emission_map(tokens, b):
     unseen = []
     for token in tokens:
         seen = False
@@ -165,20 +175,38 @@ def get_updated_emission_map(tokens, b):
                 b[tag][unseen_token] = T / (Z * (tag_freq + T))
     return b
 
-with open(devt_file, 'r') as f:
-    for line in f:
-        prev_token, prev_tag = '', start_tag
-        split_line = line.strip().split(' ')
-        tokens, ans_tags = [], []
-        for tagged_token in split_line:
-            split_token = tagged_token.split('/')
-            curr_token = ''.join(split_token[:-1])
-            curr_tag = split_token[-1]
-            tokens.append(curr_token)
-            ans_tags.append(curr_tag)
-        dev_tags = list(map(lambda index: pos_tags_list[index], \
-            viterbi(tokens, get_updated_emission_map(tokens, map_emissions))))
-        print(dev_tags)
+while lambda_1 >= 0.5:
+    print(lambda_1)
+    interpolate_emission_map(lambda_1, lambda_2)
+    with open(devt_file, 'r') as f:
+        score, total = 0, 0
+        for line in f:
+            prev_token, prev_tag = '', start_tag
+            split_line = line.strip().split(' ')
+            tokens, ans_tags = [], []
+            for tagged_token in split_line:
+                split_token = tagged_token.split('/')
+                curr_token = ''.join(split_token[:-1])
+                curr_tag = split_token[-1]
+                tokens.append(curr_token)
+                ans_tags.append(curr_tag)
+            dev_tags = list(map(lambda index: pos_tags_list[index], \
+                viterbi(tokens, get_smoothed_emission_map(tokens, map_emissions))))
+            num_tests = len(tokens)
+            for i in range(num_tests):
+                if dev_tags[i] == ans_tags[i]:
+                    score += 1
+            total += num_tests
+        print(score, total)
+        curr_score = score
+        if curr_score > fin_score:
+            fin_score = curr_score
+            fin_map_emissions = map_emissions
+            fin_lambda_1 = lambda_1
+    lambda_1 -= step_size
+    lambda_2 += step_size
+
+print(fin_lambda_1)
 
 with open(model_file, 'w') as h:
     h.write('{0}\n'.format(num_tags))
@@ -186,4 +214,5 @@ with open(model_file, 'w') as h:
         h.write('{0}\n'.format(' '.join([str(col) for col in row])))
 
 with open('emit.out', 'w') as e:
-    json.dump(map_emissions, e)
+    # json.dump(map_emissions, e)
+    json.dump(fin_map_emissions, e)
