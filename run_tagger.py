@@ -1,3 +1,5 @@
+from __future__ import division
+
 from decimal import Decimal
 import json
 import sys
