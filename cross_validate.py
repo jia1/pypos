@@ -139,7 +139,6 @@ tag_tag_dict = {tag: {tag: 0 for tag in pos_tags_list} for tag in tag_count_dict
 
 list_training_set = []
 num_training_rows = 0
-curr_validate_indices = set()
 
 # 2. Open the training data file and parse the tokens and tags
 # Count tag -> tag for transition matrix and tag -> word for emission map
@@ -151,6 +150,7 @@ with open(train_file, 'r') as f:
 
 k = 5
 num_training_rows = len(list_training_set)
+num_per_fold = num_training_rows // k
 val_score, val_count = 0, 0
 
 for t in range(k):
@@ -162,14 +162,14 @@ for t in range(k):
     sum_transitions = deepcopy(tag_count_dict)
     sum_emissions = deepcopy(tag_count_dict)
 
-    curr_validate_indices = set(random.sample(range(num_training_rows), num_training_rows // k))
-    curr_validate_list = []
-    print('Fold #{0}: Validation set indices are {1}'.format(t, curr_validate_indices))
+    val_start_index = min(t * num_per_fold, num_training_rows - 1)
+    val_stop_index = min(val_start_index + num_per_fold, num_training_rows)
 
+    print('Fold #{0}: Validation start index is {1} and validation stop index is {2}'.format(t, val_start_index, val_stop_index))
+
+    print('Fold #{0}: Counting...'.format(t))
     for i in range(num_training_rows):
-        if i in curr_validate_indices:
-            curr_validate_list.append(list_training_set[i])
-        else:
+        if i < val_start_index or i > val_stop_index:
             prev_token, prev_tag = '', start_tag
             split_line = list_training_set[i]
             for tagged_token in split_line:
@@ -209,7 +209,7 @@ for t in range(k):
         map_emissions[curr_tag] = {k: Decimal(v / sum_emissions[curr_tag]) for k, v in curr_emission.items()}
 
     # 6. For each test case (line), re-smooth the original emission map and pass it to the viterbi function
-    for line in curr_validate_list:
+    for line in list_training_set[val_start_index:val_stop_index]:
         tokens, ans_tags = [], []
         split_line = line
         for tagged_token in split_line:
@@ -232,6 +232,7 @@ for t in range(k):
 print('Score: {0} out of {1}'.format(val_score, val_count))
 
 # k = 10
+# Sampling with replacement k times (not exactly a proper k-fold...)
 # localhost
 # val_score = 610420 / 948493
 # val_score = 615444 / 950912
@@ -240,9 +241,15 @@ print('Score: {0} out of {1}'.format(val_score, val_count))
 # val_score = 614569 / 950102
 
 # k = 5
+# Sampling with replacement k times (not exactly a proper k-fold...)
 # localhost
 # val_score = 616870 / 953116
 # val_score = 618826 / 950247
 # val_score =
 # sunfire
+# val_score =
+# val_score =
+
+# Proper k-fold
+# val_score =
 # val_score =
