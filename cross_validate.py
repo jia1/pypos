@@ -1,6 +1,7 @@
 from __future__ import division
 
 from copy import deepcopy
+from decimal import Decimal
 import random
 import sys
 
@@ -46,7 +47,7 @@ def viterbi(tokens, b):
     for s in range(num_tags):
         token, tag = tokens[0], pos_tags_list[s]
         if token in b[tag]:
-            mat_viterbi[s][0] = a[0][s] * Decimal(b[tag][token])
+            mat_viterbi[s][0] = Decimal(a[0][s]) * Decimal(b[tag][token])
 
     # 4b. Iteratively populate the viterbi matrix
     for t in range(1, T):
@@ -54,7 +55,7 @@ def viterbi(tokens, b):
             v_max_prob, b_max_prob, b_max_s = 0, 0, 0
             # 4bi. Get argmax s' (POS tag) based on the viterbi probabilities in the previous t (token)
             for s_prime in range(num_tags):
-                b_curr_prob = mat_viterbi[s_prime][t-1] * a[s_prime][s]
+                b_curr_prob = mat_viterbi[s_prime][t-1] * Decimal(a[s_prime][s])
                 v_curr_prob = 0
                 token, tag = tokens[t], pos_tags_list[s]
                 if token in b[tag]:
@@ -70,7 +71,7 @@ def viterbi(tokens, b):
     # 4c. Populate final column of viterbi matrix with tag -> </s> values from transition matrix
     v_max_prob, b_max_prob, b_max_s = 0, 0, 0
     for s_prime in range(num_tags):
-        b_curr_prob = mat_viterbi[s_prime][-1] * a[s_prime][-1]
+        b_curr_prob = mat_viterbi[s_prime][-1] * Decimal(a[s_prime][-1])
         v_curr_prob = 0
         token, tag = tokens[-1], pos_tags_list[s_prime]
         if token in b[tag]:
@@ -153,7 +154,8 @@ num_training_rows = len(list_training_set)
 val_score = 0
 val_count = k * (num_training_rows // k)
 
-for _ in range(k):
+for t in range(k):
+    print('Fold #{0}'.format(t))
     mat_transitions = [[0 for tag in range(num_tags)] for tag in range(num_tags)]
     num_transitions = deepcopy(tag_tag_dict)
     map_emissions = deepcopy(tag_token_dict)
@@ -163,6 +165,7 @@ for _ in range(k):
 
     curr_validate_indices = set(random.sample(range(num_training_rows), num_training_rows // k))
     curr_validate_list = []
+    print('Fold #{0}: Validation set indices are {1}'.format(t, curr_validate_indices))
 
     for i in range(num_training_rows):
         if i in curr_validate_indices:
@@ -190,20 +193,23 @@ for _ in range(k):
             num_transitions[prev_tag][curr_tag] += 1
             sum_transitions[prev_tag] += 1
 
-            # 4. Translate transition counts (on a dictionary) to transition matrix (2D list)
-            # Divide the frequency of tagA -> tagB by the total frequency of tagA
-            for prev_tag in num_transitions:
-                count = sum_transitions[prev_tag]
-                if count > 0:
-                    row = pos_tags_dict[prev_tag]
-                    for next_tag in num_transitions[prev_tag]:
-                        col = pos_tags_dict[next_tag]
-                        mat_transitions[row][col] = num_transitions[prev_tag][next_tag] / sum_transitions[prev_tag]
+    print('Fold #{0}: Transforming transition frequencies into a transition matrix'.format(t))
+    # 4. Translate transition counts (on a dictionary) to transition matrix (2D list)
+    # Divide the frequency of tagA -> tagB by the total frequency of tagA
+    for prev_tag in num_transitions:
+        count = sum_transitions[prev_tag]
+        if count > 0:
+            row = pos_tags_dict[prev_tag]
+            for next_tag in num_transitions[prev_tag]:
+                col = pos_tags_dict[next_tag]
+                mat_transitions[row][col] = num_transitions[prev_tag][next_tag] / sum_transitions[prev_tag]
 
-            # 5. Iterate through the emission map and divide the frequency of tag -> word by tag
-            for curr_tag, curr_emission in num_emissions.items():
-                map_emissions[curr_tag] = {k: (v / sum_emissions[curr_tag]) for k, v in curr_emission.items()}
+    print('Fold #{0}: Transforming emission frequencies into an emission map'.format(t))
+    # 5. Iterate through the emission map and divide the frequency of tag -> word by tag
+    for curr_tag, curr_emission in num_emissions.items():
+        map_emissions[curr_tag] = {k: (v / sum_emissions[curr_tag]) for k, v in curr_emission.items()}
 
+    print('Fold #{0}: Re-smoothing emission map and running the Viterbi function'.format(t))
     # 6. For each test case (line), re-smooth the original emission map and pass it to the viterbi function
     for line in curr_validate_list:
         tokens, ans_tags = [], []
@@ -221,5 +227,6 @@ for _ in range(k):
         for i in range(len(tokens)):
             if val_tags[i] == ans_tags[i]:
                 val_score += 1
+    print('Fold #{0}: Cumulative score is {1} out of {2}'.format(t, val_score, val_count + t * val_count))
 
 print('Score: {0} out of {1}'.format(val_score, val_count))
