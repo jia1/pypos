@@ -47,7 +47,7 @@ def viterbi(tokens, b):
     for s in range(num_tags):
         token, tag = tokens[0], pos_tags_list[s]
         if token in b[tag]:
-            mat_viterbi[s][0] = Decimal(a[0][s]) * Decimal(b[tag][token])
+            mat_viterbi[s][0] = a[0][s] * b[tag][token]
 
     # 4b. Iteratively populate the viterbi matrix
     for t in range(1, T):
@@ -55,11 +55,11 @@ def viterbi(tokens, b):
             v_max_prob, b_max_prob, b_max_s = 0, 0, 0
             # 4bi. Get argmax s' (POS tag) based on the viterbi probabilities in the previous t (token)
             for s_prime in range(num_tags):
-                b_curr_prob = mat_viterbi[s_prime][t-1] * Decimal(a[s_prime][s])
+                b_curr_prob = mat_viterbi[s_prime][t-1] * a[s_prime][s]
                 v_curr_prob = 0
                 token, tag = tokens[t], pos_tags_list[s]
                 if token in b[tag]:
-                    v_curr_prob = b_curr_prob * Decimal(b[tag][token])
+                    v_curr_prob = b_curr_prob * b[tag][token]
                 if v_curr_prob > v_max_prob:
                     v_max_prob = v_curr_prob
                 if b_curr_prob > b_max_prob:
@@ -71,11 +71,11 @@ def viterbi(tokens, b):
     # 4c. Populate final column of viterbi matrix with tag -> </s> values from transition matrix
     v_max_prob, b_max_prob, b_max_s = 0, 0, 0
     for s_prime in range(num_tags):
-        b_curr_prob = mat_viterbi[s_prime][-1] * Decimal(a[s_prime][-1])
+        b_curr_prob = mat_viterbi[s_prime][-1] * a[s_prime][-1]
         v_curr_prob = 0
         token, tag = tokens[-1], pos_tags_list[s_prime]
         if token in b[tag]:
-            v_curr_prob = b_curr_prob * Decimal(b[tag][token])
+            v_curr_prob = b_curr_prob * b[tag][token]
         if v_curr_prob > v_max_prob:
             v_max_prob = v_curr_prob
         if b_curr_prob > b_max_prob:
@@ -116,9 +116,9 @@ def get_updated_emission_map(tokens, b):
         T = len(vocabulary) - Z
         for tag in b:
             tag_freq = len(b[tag])
-            b[tag] = {token: ((b[tag][token] * tag_freq) / (tag_freq + T)) for token in b[tag]}
+            b[tag] = {token: Decimal((b[tag][token] * tag_freq) / (tag_freq + T)) for token in b[tag]}
             for unseen_token in unseen:
-                b[tag][unseen_token] = T / (Z * (tag_freq + T))
+                b[tag][unseen_token] = Decimal(T / (Z * (tag_freq + T)))
     return b
 
 # 1. Create data structures to map from index to POS tag (list) and from POS tag to index (dict)
@@ -202,14 +202,13 @@ for t in range(k):
             row = pos_tags_dict[prev_tag]
             for next_tag in num_transitions[prev_tag]:
                 col = pos_tags_dict[next_tag]
-                mat_transitions[row][col] = num_transitions[prev_tag][next_tag] / sum_transitions[prev_tag]
+                mat_transitions[row][col] = Decimal(num_transitions[prev_tag][next_tag] / sum_transitions[prev_tag])
 
     print('Fold #{0}: Transforming emission frequencies into an emission map'.format(t))
     # 5. Iterate through the emission map and divide the frequency of tag -> word by tag
     for curr_tag, curr_emission in num_emissions.items():
-        map_emissions[curr_tag] = {k: (v / sum_emissions[curr_tag]) for k, v in curr_emission.items()}
+        map_emissions[curr_tag] = {k: Decimal(v / sum_emissions[curr_tag]) for k, v in curr_emission.items()}
 
-    print('Fold #{0}: Re-smoothing emission map and running the Viterbi function'.format(t))
     # 6. For each test case (line), re-smooth the original emission map and pass it to the viterbi function
     for line in curr_validate_list:
         tokens, ans_tags = [], []
@@ -220,6 +219,7 @@ for t in range(k):
             curr_tag = split_token[-1]
             tokens.append(curr_token)
             ans_tags.append(curr_tag)
+        print('Fold #{0}: Validating an instance...'.format(t))
         a = mat_transitions
         val_tags = list(map(lambda index: pos_tags_list[index], viterbi(tokens, get_updated_emission_map(tokens, map_emissions))))
 
