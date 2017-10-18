@@ -151,8 +151,7 @@ with open(train_file, 'r') as f:
 
 k = 10
 num_training_rows = len(list_training_set)
-val_score = 0
-val_count = k * (num_training_rows // k)
+val_score, val_count = 0, 0
 
 for t in range(k):
     print('Fold #{0}'.format(t))
@@ -225,8 +224,10 @@ for t in range(k):
 
         # 7. Write the tags to file
         for i in range(len(tokens)):
+            val_count += 1
             if val_tags[i] == ans_tags[i]:
                 val_score += 1
-    print('Fold #{0}: Cumulative score is {1} out of {2}'.format(t, val_score, val_count + t * val_count))
+    print('Fold #{0}: Cumulative score is {1} out of {2}'.format(t, val_score, val_count))
 
 print('Score: {0} out of {1}'.format(val_score, val_count))
+# val_score = 611628
