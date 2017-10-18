@@ -230,12 +230,19 @@ for t in range(k):
     print('Fold #{0}: Cumulative score is {1} out of {2}'.format(t, val_score, val_count))
 
 print('Score: {0} out of {1}'.format(val_score, val_count))
+
 # k = 10
+# localhost
 # val_score = 610420 / 948493
 # val_score = 615444 / 950912
-# val_score =
+# val_score = 613114 / 948251
+# sunfire
+# val_score = 614569 / 950102
 
 # k = 5
+# localhost
+# val_score = 616870 / 953116
+# val_score = 618826 / 950247
 # val_score =
-# val_score =
+# sunfire
 # val_score =
