@@ -149,7 +149,7 @@ with open(train_file, 'r') as f:
         split_line = line.strip().split(' ')
         list_training_set.append(split_line)
 
-k = 10
+k = 5
 num_training_rows = len(list_training_set)
 val_score, val_count = 0, 0
 
@@ -230,4 +230,12 @@ for t in range(k):
     print('Fold #{0}: Cumulative score is {1} out of {2}'.format(t, val_score, val_count))
 
 print('Score: {0} out of {1}'.format(val_score, val_count))
-# val_score = 611628
+# k = 10
+# val_score = 610420 / 948493
+# val_score = 615444 / 950912
+# val_score =
+
+# k = 5
+# val_score =
+# val_score =
+# val_score =
