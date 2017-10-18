@@ -219,7 +219,7 @@ for t in range(k):
             curr_tag = split_token[-1]
             tokens.append(curr_token)
             ans_tags.append(curr_tag)
-        print('Fold #{0}: Validating an instance...'.format(t))
+        # print('Fold #{0}: Validating an instance...'.format(t))
         a = mat_transitions
         val_tags = list(map(lambda index: pos_tags_list[index], viterbi(tokens, get_updated_emission_map(tokens, map_emissions))))
 
