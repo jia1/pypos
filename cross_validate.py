@@ -246,7 +246,9 @@ print('Score: {0} out of {1}'.format(val_score, val_count))
 # val_score = 616870 / 953116
 # val_score = 618826 / 950247
 # val_score = 619238 / 948380
-# sunfire
+
 # Proper k-fold
-# val_score =
-# val_score =
+# localhost
+# val_score = 617753 / 949975 (65.03%)
+# sunfire
+# val_score = 615436 / 949973 (64.78%)

@@ -1,0 +1,34 @@
+(C:\Users\Jiayee\Anaconda3) C:\Users\Jiayee\Documents\GitRepositories\pypos>python cross_validate.py sents.train
+Fold #0
+Fold #0: Validation start index is 0 and validation stop index is 7966
+Fold #0: Counting...
+Fold #0: Transforming transition frequencies into a transition matrix
+Fold #0: Transforming emission frequencies into an emission map
+Fold #0: Cumulative score is 122823 out of 190840
+Fold #1
+Fold #1: Validation start index is 7966 and validation stop index is 15932
+Fold #1: Counting...
+Fold #1: Transforming transition frequencies into a transition matrix
+Fold #1: Transforming emission frequencies into an emission map
+Fold #1: Cumulative score is 244492 out of 379544
+Fold #2
+Fold #2: Validation start index is 15932 and validation stop index is 23898
+Fold #2: Counting...
+Fold #2: Transforming transition frequencies into a transition matrix
+Fold #2: Transforming emission frequencies into an emission map
+Fold #2: Cumulative score is 368942 out of 569495
+Fold #3
+Fold #3: Validation start index is 23898 and validation stop index is 31864
+Fold #3: Counting...
+Fold #3: Transforming transition frequencies into a transition matrix
+Fold #3: Transforming emission frequencies into an emission map
+Fold #3: Cumulative score is 494442 out of 759708
+Fold #4
+Fold #4: Validation start index is 31864 and validation stop index is 39830
+Fold #4: Counting...
+Fold #4: Transforming transition frequencies into a transition matrix
+Fold #4: Transforming emission frequencies into an emission map
+Fold #4: Cumulative score is 617753 out of 949975
+Score: 617753 out of 949975
+
+(C:\Users\Jiayee\Anaconda3) C:\Users\Jiayee\Documents\GitRepositories\pypos>
